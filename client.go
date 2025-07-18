@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -20,6 +21,12 @@ import (
 // type passes. E.g. typical mDNS packets distributed via IPv4, often contain
 // both DNS A and AAAA entries.
 type IPType uint8
+
+var logger = log.New(os.Stdout, "", log.LstdFlags)
+
+func GetLogger() *log.Logger {
+	return logger
+}
 
 // Options for IPType.
 const (
@@ -455,7 +462,7 @@ func (c *client) sendQuery(msg *dns.Msg) error {
 				wcm.IfIndex = c.ifaces[ifi].Index
 			default:
 				if err := c.ipv4conn.SetMulticastInterface(&c.ifaces[ifi]); err != nil {
-					log.Printf("[WARN] mdns: Failed to set multicast interface: %v", err)
+					logger.Printf("[WARN] mdns: Failed to set multicast interface: %v", err)
 				}
 			}
 			c.ipv4conn.WriteTo(buf, &wcm, ipv4Addr)
@@ -472,7 +479,7 @@ func (c *client) sendQuery(msg *dns.Msg) error {
 				wcm.IfIndex = c.ifaces[ifi].Index
 			default:
 				if err := c.ipv6conn.SetMulticastInterface(&c.ifaces[ifi]); err != nil {
-					log.Printf("[WARN] mdns: Failed to set multicast interface: %v", err)
+					logger.Printf("[WARN] mdns: Failed to set multicast interface: %v", err)
 				}
 			}
 			c.ipv6conn.WriteTo(buf, &wcm, ipv6Addr)
