@@ -14,11 +14,11 @@ var (
 	mdnsGroupIPv6 = net.ParseIP("ff02::fb")
 
 	// mDNS wildcard addresses
-	mdnsWildcardAddrIPv4 = &net.UDPAddr{
+	mdnsWildcardAddrIPv4 = net.UDPAddr{
 		IP:   net.ParseIP("224.0.0.0"),
 		Port: 5353,
 	}
-	mdnsWildcardAddrIPv6 = &net.UDPAddr{
+	mdnsWildcardAddrIPv6 = net.UDPAddr{
 		IP: net.ParseIP("ff02::"),
 		// IP:   net.ParseIP("fd00::12d3:26e7:48db:e7d"),
 		Port: 5353,
@@ -35,8 +35,8 @@ var (
 	}
 )
 
-func joinUdp6Multicast(interfaces []net.Interface) (*ipv6.PacketConn, error) {
-	udpConn, err := net.ListenUDP("udp6", mdnsWildcardAddrIPv6)
+func joinUdp6Multicast(interfaces []net.Interface, listenAddr *net.UDPAddr) (*ipv6.PacketConn, error) {
+	udpConn, err := net.ListenUDP("udp6", listenAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,8 @@ func joinUdp6Multicast(interfaces []net.Interface) (*ipv6.PacketConn, error) {
 	return pkConn, nil
 }
 
-func joinUdp4Multicast(interfaces []net.Interface) (*ipv4.PacketConn, error) {
-	udpConn, err := net.ListenUDP("udp4", mdnsWildcardAddrIPv4)
+func joinUdp4Multicast(interfaces []net.Interface, listenAddr *net.UDPAddr) (*ipv4.PacketConn, error) {
+	udpConn, err := net.ListenUDP("udp4", listenAddr)
 	if err != nil {
 		// log.Printf("[ERR] bonjour: Failed to bind to udp4 mutlicast: %v", err)
 		return nil, err

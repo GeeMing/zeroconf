@@ -39,8 +39,9 @@ const (
 )
 
 type clientOpts struct {
-	listenOn IPType
-	ifaces   []net.Interface
+	listenOn   IPType
+	ifaces     []net.Interface
+	listenPort int
 }
 
 // ClientOption fills the option struct to configure intefaces, etc.
@@ -54,6 +55,13 @@ type ClientOption func(*clientOpts)
 func SelectIPTraffic(t IPType) ClientOption {
 	return func(o *clientOpts) {
 		o.listenOn = t
+	}
+}
+
+// SelectListenPort selects the port to listen for mDNS records
+func SelectListenPort(port int) ClientOption {
+	return func(o *clientOpts) {
+		o.listenPort = port
 	}
 }
 
@@ -74,7 +82,8 @@ type Resolver struct {
 func NewResolver(options ...ClientOption) (*Resolver, error) {
 	// Apply default configuration and load supplied options.
 	var conf = clientOpts{
-		listenOn: IPv4AndIPv6,
+		listenOn:   IPv4AndIPv6,
+		listenPort: 5353,
 	}
 	for _, o := range options {
 		if o != nil {
@@ -163,11 +172,18 @@ func newClient(opts clientOpts) (*client, error) {
 	if len(ifaces) == 0 {
 		ifaces = listMulticastInterfaces()
 	}
+
+	listenAddrIPv4 := mdnsWildcardAddrIPv4
+	listenAddrIPv6 := mdnsWildcardAddrIPv6
+
+	listenAddrIPv4.Port = opts.listenPort
+	listenAddrIPv6.Port = opts.listenPort
+
 	// IPv4 interfaces
 	var ipv4conn *ipv4.PacketConn
 	if (opts.listenOn & IPv4) > 0 {
 		var err error
-		ipv4conn, err = joinUdp4Multicast(ifaces)
+		ipv4conn, err = joinUdp4Multicast(ifaces, &listenAddrIPv4)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +192,7 @@ func newClient(opts clientOpts) (*client, error) {
 	var ipv6conn *ipv6.PacketConn
 	if (opts.listenOn & IPv6) > 0 {
 		var err error
-		ipv6conn, err = joinUdp6Multicast(ifaces)
+		ipv6conn, err = joinUdp6Multicast(ifaces, &listenAddrIPv6)
 		if err != nil {
 			return nil, err
 		}

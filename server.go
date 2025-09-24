@@ -156,11 +156,13 @@ type Server struct {
 
 // Constructs server structure
 func newServer(ifaces []net.Interface) (*Server, error) {
-	ipv4conn, err4 := joinUdp4Multicast(ifaces)
+	listenAddrIPv4 := mdnsWildcardAddrIPv4
+	listenAddrIPv6 := mdnsWildcardAddrIPv6
+	ipv4conn, err4 := joinUdp4Multicast(ifaces, &listenAddrIPv4)
 	if err4 != nil {
 		logger.Printf("[zeroconf] no suitable IPv4 interface: %s", err4.Error())
 	}
-	ipv6conn, err6 := joinUdp6Multicast(ifaces)
+	ipv6conn, err6 := joinUdp6Multicast(ifaces, &listenAddrIPv6)
 	if err6 != nil {
 		logger.Printf("[zeroconf] no suitable IPv6 interface: %s", err6.Error())
 	}
