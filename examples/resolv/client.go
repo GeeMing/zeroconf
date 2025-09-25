@@ -5,7 +5,7 @@ import (
 	"flag"
 	"time"
 
-	"github.com/NullYing/zeroconf"
+	"github.com/GeeMing/zeroconf"
 )
 
 var (

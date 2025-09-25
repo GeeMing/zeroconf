@@ -1,4 +1,4 @@
-module github.com/NullYing/zeroconf
+module github.com/GeeMing/zeroconf
 
 go 1.23.0
 
