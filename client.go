@@ -39,9 +39,10 @@ const (
 )
 
 type clientOpts struct {
-	listenOn   IPType
-	ifaces     []net.Interface
-	listenPort int
+	listenOn      IPType
+	ifaces        []net.Interface
+	listenPort    int
+	useQuQuestion bool
 }
 
 // ClientOption fills the option struct to configure intefaces, etc.
@@ -72,6 +73,13 @@ func SelectIfaces(ifaces []net.Interface) ClientOption {
 	}
 }
 
+// UseQuQuestion selects whether to use QU for mDNS records
+func UseQuQuestion(enable bool) ClientOption {
+	return func(o *clientOpts) {
+		o.useQuQuestion = enable
+	}
+}
+
 // Resolver acts as entry point for service lookups and to browse the DNS-SD.
 type Resolver struct {
 	c *client
@@ -82,8 +90,9 @@ type Resolver struct {
 func NewResolver(options ...ClientOption) (*Resolver, error) {
 	// Apply default configuration and load supplied options.
 	var conf = clientOpts{
-		listenOn:   IPv4AndIPv6,
-		listenPort: 5353,
+		listenOn:      IPv4AndIPv6,
+		listenPort:    5353,
+		useQuQuestion: false,
 	}
 	for _, o := range options {
 		if o != nil {
@@ -164,6 +173,7 @@ type client struct {
 	ipv4conn *ipv4.PacketConn
 	ipv6conn *ipv6.PacketConn
 	ifaces   []net.Interface
+	opts     clientOpts
 }
 
 // Client structure constructor
@@ -202,6 +212,7 @@ func newClient(opts clientOpts) (*client, error) {
 		ipv4conn: ipv4conn,
 		ipv6conn: ipv6conn,
 		ifaces:   ifaces,
+		opts:     opts,
 	}, nil
 }
 
@@ -455,8 +466,20 @@ func (c *client) query(params *lookupParams) error {
 		}
 	} else if len(params.Subtypes) > 0 { // service subtype browse
 		m.SetQuestion(params.Subtypes[0], dns.TypePTR)
+
+		// log.Println(">>>>c.opts.useQuQuestion", c.opts.useQuQuestion)
+		if c.opts.useQuQuestion {
+
+			m.Question[0].Qclass = dns.ClassINET | qClassCacheFlush
+		}
+
 	} else { // service name browse
 		m.SetQuestion(serviceName, dns.TypePTR)
+
+		// log.Println(">>>> 2 c.opts.useQuQuestion", c.opts.useQuQuestion)
+		if c.opts.useQuQuestion {
+			m.Question[0].Qclass = dns.ClassINET | qClassCacheFlush
+		}
 	}
 	m.RecursionDesired = false
 	if err := c.sendQuery(m); err != nil {
